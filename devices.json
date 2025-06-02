@@ -1,0 +1,257 @@
+[
+  
+  {
+    "id": "relay_controller_c3",
+    "name": "高压电气仓控制器",
+    "type": "ZQWL_RELAY_8",
+    "address": 97,
+    "port": "MAIN_PORT",
+    "description": "控制两路交流接触器,以及采集若干高压信号;控制梯子,清水水泵,黑灰水排水泵",
+    "buttons": [
+      {
+        "id": "c3-relay-1",
+        "relayIndex": 0,
+        "name": "c3 预留",
+        "description": "",
+        "room": "未分配"
+      },
+      {
+        "id": "c3-relay-2",
+        "relayIndex": 1,
+        "name": "c3 预留",
+        "description": "",
+        "room": "未分配"
+      },
+      {
+        "id": "ac-contactor-1",
+        "relayIndex": 2,
+        "name": "48V充电机开关",
+        "description": "DC控制交流接触器，上端直连PMS AC 输出，负责充电机的通断",
+        "room": "高压电气控制"
+      },
+      {
+        "id": "ac-contactor-2",
+        "relayIndex": 3,
+        "name": "逆变器AC输入开关",
+        "description": "DC控制交流接触器，上端直连PMS AC 输出，打开后，逆变器转为充电模式，全车供电由PMS完成",
+        "room": "高压电气控制"
+      },
+      {
+        "id": "dc-pump-grey-water",
+        "relayIndex": 4,
+        "name": "打开灰水箱排水泵",
+        "description": "控制灰水箱排水泵是否打开",
+        "room": "储水系统"
+      },
+      {
+        "id": "dc-pump-black-water",
+        "relayIndex": 5,
+        "name": "打开黑水箱排水泵",
+        "description": "控制黑水箱排水泵是否打开",
+        "room": "储水系统"
+      },
+      {
+        "id": "dc-pump-water",
+        "relayIndex": 6,
+        "name": "关闭净水箱水泵",
+        "description": "关闭净水上水泵(常闭)",
+        "room": "储水系统"
+      },
+      {
+        "id": "dc-lader",
+        "relayIndex": 7,
+        "name": "关闭梯子电源",
+        "description": "关闭梯子电源(常闭)",
+        "room": "车身控制"
+      }
+    ]
+  },
+  {
+    "id": "relay_controller_c2",
+    "name": "主控制柜继电器控制器",
+    "type": "ZQWL_RELAY_16",
+    "address": 1,
+    "port": "MAIN_PORT",
+    "description": "主控制柜背面安装，16路继电器，其中最后6路是常闭接法。主要负责冷却液控制电磁阀，柴油锅炉以及卫生间灯光，车尾后部床的灯光以及供电控制，还有马桶的排水开关",
+    "buttons": [
+      {
+        "id": "washroom_light",
+        "relayIndex": 0,
+        "name": "卫生间灯光",
+        "description": "",
+        "room": "灯光"
+      },
+      {
+        "id": "bed2_light",
+        "relayIndex": 1,
+        "name": "后床灯光",
+        "description": "打开后床灯光",
+        "room": "灯光"
+      },
+      {
+        "id": "c2-relay-3",
+        "relayIndex": 2,
+        "name": "c2 预留",
+        "description": "",
+        "room": "未分配"
+      },
+      {
+        "id": "c2-relay-4",
+        "relayIndex": 3,
+        "name": "c2 预留",
+        "description": "",
+        "room": "未分配"
+      },
+      {
+        "id": "c2-relay-5",
+        "relayIndex": 4,
+        "name": "c2 预留",
+        "description": "",
+        "room": "未分配"
+      },
+      {
+        "id": "c2-relay-6",
+        "relayIndex": 5,
+        "name": "c2 预留",
+        "description": "",
+        "room": "未分配"
+      },
+      {
+        "id": "fan-power",
+        "relayIndex": 6,
+        "name": "暖风机",
+        "description": "打开暖风机",
+        "room": "车载热控中心"
+      },
+      {
+        "id": "toilet_flush_switch",
+        "relayIndex": 7,
+        "name": "马桶排水开关",
+        "description": "打开马桶排水阀门",
+        "room": "卫生间"
+      },
+      {
+        "id": "solenoid_valve_signal_engine",
+        "relayIndex": 8,
+        "name": "接入发动机冷却液",
+        "description": "电磁阀信号（发动机），高电平接通，打开开关，接通发动机和暖风系统的冷却液",
+        "room": "车载热控中心"
+      },
+      {
+        "id": "diesel_boiler_power",
+        "relayIndex": 9,
+        "name": "打开柴油锅炉",
+        "description": "接通柴油锅炉电源",
+        "room": "车载热控中心"
+      },
+      {
+        "id": "solenoid_valve_power_engine",
+        "relayIndex": 10,
+        "name": "关闭电磁阀常供电（发动机）",
+        "description": "电磁阀常供电（发动机）",
+        "room": "高级控制"
+      },
+      {
+        "id": "solenoid_valve_power_fan",
+        "relayIndex": 11,
+        "name": "关闭电磁阀常供电（暖风机）",
+        "description": "电磁阀常供电（暖风机）",
+        "room": "高级控制"
+      },
+      {
+        "id": "solenoid_valve_signal_fan",
+        "relayIndex": 12,
+        "name": "暖风机接入冷却液",
+        "description": "暖风机冷却液电磁阀信号,低电平接通，本开关是常闭",
+        "room": "车载热控中心"
+      },
+      {
+        "id": "washroom_power",
+        "relayIndex": 13,
+        "name": "关闭卫生间低压供电",
+        "description": "卫生间的常供电，负责卫生间门，卫生间排风扇供电",
+        "room": "高级控制"
+      },
+      {
+        "id": "bed2_power",
+        "relayIndex": 14,
+        "name": "关闭后床常供电电",
+        "description": "后床常供电，负责后床升降功能",
+        "room": "高级控制"
+      },
+      {
+        "id": "c2_relay_16",
+        "relayIndex": 15,
+        "name": "未分配（常闭）",
+        "description": "常闭未分配",
+        "room": "未分配"
+      }
+    ]
+  },
+  {
+    "id": "relay_controller_c1",
+    "name": "厨房区域控制器",
+    "type": "ZQWL_RELAY_8",
+    "address": 65,
+    "port": "MAIN_PORT",
+    "description": "部署位置在厨房区域，主要控制车内灯光，前床，冰箱，以及马桶进水开关",
+    "buttons": [
+      {
+        "id": "toilet_switch",
+        "relayIndex":0,
+        "name": "马桶开关",
+        "description": "马桶进水阀门(12V)",
+        "room": "卫生间"
+      },
+      {
+        "id": "inner_light1",
+        "relayIndex": 1,
+        "name": "顶灯1",
+        "description": "车内顶灯",
+        "room": "灯光"
+      },
+      {
+        "id": "inner_light2",
+        "relayIndex": 2,
+        "name": "顶灯2",
+        "description": "车内顶灯",
+        "room": "灯光"
+      },
+      {
+        "id": "inner_light3",
+        "relayIndex": 3,
+        "name": "顶灯3",
+        "description": "车内顶灯",
+        "room": "灯光"
+      },
+      {
+        "id": "bed_light1",
+        "relayIndex": 4,
+        "name": "前床灯光",
+        "description": "车头吊床下的灯",
+        "room": "灯光"
+      },
+      {
+        "id": "fan1_switch",
+        "relayIndex": 5,
+        "name": "厨房抽气风扇",
+        "description": "厨房上部的抽气风扇",
+        "room": "车载热控中心"
+      },
+      {
+        "id": "fan2_switch",
+        "relayIndex": 6,
+        "name": "高压电气仓风扇",
+        "description": "设备舱风扇，用来对设备舱散热",
+        "room": "车载热控中心"
+      },
+      {
+        "id": "c1-relay-8",
+        "relayIndex": 7,
+        "name": "预留",
+        "description": "预留",
+        "room": "未分配"
+      }
+    ]
+  }
+]
