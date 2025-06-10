@@ -10,7 +10,7 @@ import { join } from 'path';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '../../', 'public'), // 指向 Vite 构建输出的目录
+      rootPath: join(__dirname, '../../../', 'public'), // 指向 Vite 构建输出的目录
     }),
     ModbusModule,
     RelayModule,

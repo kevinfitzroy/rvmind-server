@@ -5,7 +5,7 @@ import { ModbusQueueStatus, ModbusSystemStatus } from './modbus.controller';
 
 export enum ModbusPort {
     MAIN_PORT = '/dev/ttyS9', // RS485 1
-    BACKUP_PORT = '/dev/ttyS6', // TODO check RS485 2
+    // BACKUP_PORT = '/dev/ttyS6', // TODO check RS485 2
 }
 
 interface ModbusClientConfig {
@@ -69,11 +69,11 @@ export class ModbusService implements OnModuleInit, OnModuleDestroy {
         [ModbusPort.MAIN_PORT]: {
             address: ModbusPort.MAIN_PORT,
             options: { baudRate: 115200, parity: 'none', stopBits: 1, dataBits: 8 },
-        },
-        [ModbusPort.BACKUP_PORT]: {
-            address: ModbusPort.BACKUP_PORT,
-            options: { baudRate: 9600, parity: 'none', stopBits: 1, dataBits: 8 },
-        },
+        }
+        // [ModbusPort.BACKUP_PORT]: {
+        //     address: ModbusPort.BACKUP_PORT,
+        //     options: { baudRate: 9600, parity: 'none', stopBits: 1, dataBits: 8 },
+        // },
     };
 
     // 设备离线状态管理

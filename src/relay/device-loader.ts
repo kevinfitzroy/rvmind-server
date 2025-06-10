@@ -1,7 +1,7 @@
 import * as path from "path"; // 修复：确保正确导入 path 模块
 import * as fs from "fs";
 import { DeviceConfig, ButtonConfig } from "./relay.service";
-import { ModbusPort } from "src/modbus/modbus.service";
+import { ModbusPort } from "../modbus/modbus.service";
 
 const DEVICES_PATH = path.resolve(__dirname, "../../devices.json"); // 更新路径，指向项目根目录
 
