@@ -1,11 +1,11 @@
 import { Module, OnModuleInit } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RelayModule } from './relay/relay.module';
 import { ModbusModule } from './modbus/modbus.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { BatteryModule } from './battery/battery.module';
 
 @Module({
   imports: [
@@ -14,6 +14,7 @@ import { join } from 'path';
     }),
     ModbusModule,
     RelayModule,
+    BatteryModule,
     EventEmitterModule.forRoot({
       // 可选配置
       wildcard: false,
@@ -30,6 +31,9 @@ import { join } from 'path';
 })
 export class AppModule implements OnModuleInit {
   onModuleInit(): void {
-    console.log('Static files served from:', join(__dirname, '../../', 'public'));
+    console.log(
+      'Static files served from:',
+      join(__dirname, '../../', 'public'),
+    );
   }
 }

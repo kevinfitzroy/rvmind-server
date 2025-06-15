@@ -15,7 +15,6 @@ async function bootstrap() {
     httpsOptions,
   });
 
-
   // 启用URI版本化
   app.enableVersioning({
     type: VersioningType.URI,
