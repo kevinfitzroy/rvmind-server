@@ -1,4 +1,4 @@
-import { FrameFormat, FrameType, CanFrame } from "./types";
+import { FrameFormat, FrameType, CanFrame } from './types';
 
 const FRAME_SIZE = 13;
 const MAX_DLC = 8;
@@ -12,7 +12,7 @@ export function createCanFrame(frame: CanFrame): Uint8Array {
     Uint8Array.from([
       (frame.format << 7) | (frame.type << 6) | (frame.dlc & 0x0f),
     ]),
-    0
+    0,
   );
 
   // Frame ID
@@ -29,7 +29,7 @@ export function createCanFrame(frame: CanFrame): Uint8Array {
 export function parseCanFrame(buffer: Buffer): CanFrame {
   if (buffer.length !== FRAME_SIZE) {
     throw new Error(
-      `CAN Frame must be 13 bytes, current length: ${buffer.length}`
+      `CAN Frame must be 13 bytes, current length: ${buffer.length}`,
     );
   }
 
@@ -55,7 +55,7 @@ export function parseCanFrame(buffer: Buffer): CanFrame {
       id &= 0x7ff; // standard frame reserve 11 bits
       if (id > 0x7ff) {
         throw new Error(
-          `Standard Frame ID out of range (0x${id.toString(16)} > 0x7FF)`
+          `Standard Frame ID out of range (0x${id.toString(16)} > 0x7FF)`,
         );
       }
       break;
@@ -63,7 +63,7 @@ export function parseCanFrame(buffer: Buffer): CanFrame {
       id &= 0x1fffffff; // extend frame reserve 29 bits
       if (id > 0x1fffffff) {
         throw new Error(
-          `Extended Frame ID out of range (0x${id.toString(16)} > 0x1FFFFFFF)`
+          `Extended Frame ID out of range (0x${id.toString(16)} > 0x1FFFFFFF)`,
         );
       }
       break;
@@ -87,9 +87,10 @@ function validateFrame(frame: CanFrame): void {
     throw new Error(`DLC must be between 0-${MAX_DLC}`);
   }
   if (frame.format === FrameFormat.STD && frame.id > 0x7ff) {
-    throw new Error("Standard ID must be <= 0x7FF");
+    throw new Error('Standard ID must be <= 0x7FF');
   }
   if (frame.format === FrameFormat.EXT && frame.id > 0x1fffffff) {
-    throw new Error("Extended ID must be <= 0x1FFFFFFF");
+    throw new Error('Extended ID must be <= 0x1FFFFFFF');
   }
-}2
+}
+2;

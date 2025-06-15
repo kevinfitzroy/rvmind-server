@@ -1,5 +1,5 @@
-import { TcpCanClient } from "./tcpClient";
-import { CanFrame } from "./types";
+import { TcpCanClient } from './tcpClient';
+import { CanFrame } from './types';
 
 export type FrameMatcher = (frame: CanFrame) => boolean;
 type MatcherHandler = {
@@ -20,7 +20,10 @@ export class FrameReceiver {
   private cleanupInterval: NodeJS.Timeout;
   private matchers: MatcherHandler[] = [];
 
-  constructor(private socket: TcpCanClient, private timeout = 3000) {
+  constructor(
+    private socket: TcpCanClient,
+    private timeout = 3000,
+  ) {
     this.cleanupInterval = setInterval(() => this.cleanup(), 1000);
     this.init();
   }
@@ -44,7 +47,7 @@ export class FrameReceiver {
   // 发送请求并等待响应
   async request(
     matcher: FrameMatcher,
-    collectTimeout = this.timeout
+    collectTimeout = this.timeout,
   ): Promise<CanFrame> {
     return new Promise((resolve, reject) => {
       const requestId = Symbol();
@@ -69,7 +72,7 @@ export class FrameReceiver {
         this.pendingRequests.delete(id);
       }
     }
-    console.log("rt frame:", frame);
+    console.log('rt frame:', frame);
     // 处理订阅匹配器
     for (const { matcher, callback } of this.matchers) {
       if (matcher(frame)) {
@@ -84,7 +87,7 @@ export class FrameReceiver {
     // 清理超时请求
     for (const [id, req] of this.pendingRequests) {
       if (now - req.timestamp > req.timeout) {
-        req.reject(new Error("request timeout"));
+        req.reject(new Error('request timeout'));
         this.pendingRequests.delete(id);
       }
     }

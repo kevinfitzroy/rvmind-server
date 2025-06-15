@@ -1,7 +1,7 @@
-import net from "net";
-import { SocketOptions } from "./types";
-import { CanFrame } from "./types";
-import { parseCanFrame, createCanFrame } from "./canProtocol";
+import net from 'net';
+import { SocketOptions } from './types';
+import { CanFrame } from './types';
+import { parseCanFrame, createCanFrame } from './canProtocol';
 
 export class TcpCanClient {
   private socket: net.Socket;
@@ -17,13 +17,13 @@ export class TcpCanClient {
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.socket.connect(this.options, () => resolve());
-      this.socket.once("error", reject);
+      this.socket.once('error', reject);
     });
   }
 
   // 持续监听数据流
   private setupDataHandler() {
-    this.socket.on("data", (data: Buffer) => {
+    this.socket.on('data', (data: Buffer) => {
       this.buffer = Buffer.concat([this.buffer, data]);
       this.processBuffer();
     });
@@ -43,7 +43,7 @@ export class TcpCanClient {
           this.frameQueue.push(frame);
         }
       } catch (e) {
-        console.error("解析帧失败:", e);
+        console.error('解析帧失败:', e);
         break;
       }
     }
@@ -64,7 +64,7 @@ export class TcpCanClient {
 
   async sendFrame(frame: CanFrame): Promise<void> {
     const buffer = createCanFrame(frame);
-    console.log("Sending frame:", buffer);
+    console.log('Sending frame:', buffer);
     return new Promise((resolve, reject) => {
       this.socket.write(buffer, (err) => {
         err ? reject(err) : resolve();
