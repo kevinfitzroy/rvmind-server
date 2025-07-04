@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ModbusPort, ModbusService } from 'src/modbus/modbus.service';
+import { ModbusPort, ModbusService } from '../modbus/modbus.service';
 
 const PMS_AC_ADDRESS = 0x42; // 0x42/66 PMS AC 控制器 485 modbus 地址
 const MODBUS_PORT = ModbusPort.MAIN_PORT; // 主端口 波特率 115200
