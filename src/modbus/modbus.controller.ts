@@ -33,9 +33,9 @@ export interface ModbusSystemStatus {
   totalAccesses1m: number;
 }
 
-@Controller('modbus')
+@Controller({ path: 'modbus', version: '1' })
 export class ModbusController {
-  constructor(private readonly modbusService: ModbusService) {}
+  constructor(private readonly modbusService: ModbusService) { }
 
   @Get('status')
   getSystemStatus(): ModbusSystemStatus {
