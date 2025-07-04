@@ -6,11 +6,13 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { BatteryService } from './battery.service';
-import { RealTimeData } from './type';
 
-@Controller('battery')
-export class BatteryController {
-  private readonly logger = new Logger(BatteryController.name);
+@Controller({
+  path: 'battery',
+  version: '1',
+})
+export class BatteryBackupController {
+  private readonly logger = new Logger(BatteryBackupController.name);
 
   constructor(private readonly batteryService: BatteryService) {}
 
@@ -41,7 +43,7 @@ export class BatteryController {
       throw new HttpException('暂无电池数据', HttpStatus.NOT_FOUND);
     }
     return {
-      soc: data.soc,
+      soc: data.soc * 100,
       remainingCapacity: data.remainingCapacity,
       timestamp: data.timestamp,
     };
@@ -162,7 +164,7 @@ export class BatteryController {
 
     return {
       // 核心数据
-      soc: data.soc,
+      soc: data.soc * 100,
       totalVoltage: data.totalVoltage,
       current: data.current,
       power: data.power,

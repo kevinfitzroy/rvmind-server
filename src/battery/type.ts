@@ -64,7 +64,7 @@ export function parseRealTimeData(buffer: Buffer): RealTimeData {
   const batteryTemperatures = regs.slice(48, 56).map((v) => v - 40);
   const totalVoltage = regs[56] * 0.1;
   const current = (regs[57] - 30000) * 0.1;
-  const soc = regs[58] * 0.001;
+  const soc = parseFloat((regs[58] * 0.001).toFixed(1));
   const life = regs[59];
   const batteryCount = regs[60];
   const temperatureSensorCount = regs[61];
@@ -81,7 +81,7 @@ export function parseRealTimeData(buffer: Buffer): RealTimeData {
   const chargeDischargeStatus = regs[72];
   const chargerStatus = regs[73];
   const loadStatus = regs[74];
-  const remainingCapacity = regs[75] * 0.1;
+  const remainingCapacity = parseFloat((regs[75] * 0.1).toFixed(1));
   const cycleCount = regs[76];
   const balancingStatus = regs[77];
 

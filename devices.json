@@ -4,36 +4,36 @@
     "id": "relay_controller_c3",
     "name": "高压电气仓控制器",
     "type": "ZQWL_RELAY_8",
-    "address": 97,
+    "address": 3,
     "port": "MAIN_PORT",
-    "description": "控制两路交流接触器,以及采集若干高压信号;控制梯子,清水水泵,黑灰水排水泵",
+    "description": "控制梯子,清水水泵,黑灰水排水泵, OBC两路使能信号",
     "buttons": [
       {
-        "id": "c3-relay-1",
+        "id": "dc-lader-power",
         "relayIndex": 0,
-        "name": "c3 预留",
-        "description": "",
-        "room": "未分配"
+        "name": "关闭梯子电源",
+        "description": "关闭梯子电源(常闭)",
+        "room": "车身控制"
       },
       {
-        "id": "c3-relay-2",
+        "id": "obc-enable-1",
         "relayIndex": 1,
-        "name": "c3 预留",
-        "description": "",
-        "room": "未分配"
-      },
-      {
-        "id": "ac-contactor-1",
-        "relayIndex": 2,
-        "name": "48V充电机开关",
-        "description": "DC控制交流接触器，上端直连PMS AC 输出，负责充电机的通断",
+        "name": "OBC使能1",
+        "description": "OBC使能必须1和2 同时作用才有效",
         "room": "高压电气控制"
       },
       {
-        "id": "ac-contactor-2",
+        "id": "dc-pump-water",
+        "relayIndex": 2,
+        "name": "关闭净水箱水泵",
+        "description": "关闭净水上水泵(常闭)",
+        "room": "储水系统"
+      },
+      {
+        "id": "obc-enable-2",
         "relayIndex": 3,
-        "name": "逆变器AC输入开关",
-        "description": "DC控制交流接触器，上端直连PMS AC 输出，打开后，逆变器转为充电模式，全车供电由PMS完成",
+        "name": "OBC使能2",
+        "description": "OBC使能必须1和2 同时作用才有效",
         "room": "高压电气控制"
       },
       {
@@ -51,18 +51,18 @@
         "room": "储水系统"
       },
       {
-        "id": "dc-pump-water",
+        "id": "c3-relay-7",
         "relayIndex": 6,
-        "name": "关闭净水箱水泵",
-        "description": "关闭净水上水泵(常闭)",
-        "room": "储水系统"
+        "name": "c3-7未分配（常开）",
+        "description": "",
+        "room": "未分配"
       },
       {
-        "id": "dc-lader",
+        "id": "c3-relay-8",
         "relayIndex": 7,
-        "name": "关闭梯子电源",
-        "description": "关闭梯子电源(常闭)",
-        "room": "车身控制"
+        "name": "c3-8未分配（常开）",
+        "description": "",
+        "room": "未分配"
       }
     ]
   },
