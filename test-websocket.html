@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket 测试</title>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Relay WebSocket 测试</h1>
+    <div>
+        <button onclick="connect()">连接</button>
+        <button onclick="disconnect()">断开</button>
+        <button onclick="getDeviceStatus()">获取设备状态</button>
+        <button onclick="subscribeDevice()">订阅设备</button>
+    </div>
+    
+    <div>
+        <h3>连接状态：<span id="status">未连接</span></h3>
+        <h3>消息日志：</h3>
+        <pre id="logs" style="background: #f0f0f0; padding: 10px; height: 400px; overflow-y: scroll;"></pre>
+    </div>
+
+    <script>
+        let socket = null;
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.textContent += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function connect() {
+            if (socket) {
+                socket.disconnect();
+            }
+
+            socket = io('ws://localhost:3000/relay');
+
+            socket.on('connect', () => {
+                status.textContent = '已连接';
+                status.style.color = 'green';
+                log('✅ WebSocket 连接成功!');
+            });
+
+            socket.on('disconnect', () => {
+                status.textContent = '已断开';
+                status.style.color = 'red';
+                log('❌ WebSocket 连接断开');
+            });
+
+            socket.on('initialState', (data) => {
+                log('🔄 初始状态: ' + JSON.stringify(data, null, 2));
+            });
+
+            socket.on('stateChanged', (event) => {
+                log('🎯 状态变化: ' + JSON.stringify(event, null, 2));
+            });
+
+            socket.on('deviceStatus', (data) => {
+                log('📊 设备状态: ' + JSON.stringify(data, null, 2));
+            });
+
+            socket.on('subscribed', (data) => {
+                log('✅ 订阅成功: ' + JSON.stringify(data, null, 2));
+            });
+
+            socket.on('error', (error) => {
+                log('💥 错误: ' + JSON.stringify(error, null, 2));
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function getDeviceStatus() {
+            if (socket) {
+                socket.emit('getDeviceStatus', { deviceId: 'device1' });
+                log('📡 发送获取设备状态请求');
+            } else {
+                alert('请先连接WebSocket');
+            }
+        }
+
+        function subscribeDevice() {
+            if (socket) {
+                socket.emit('subscribeDevice', { deviceId: 'device1' });
+                log('📋 发送订阅设备请求');
+            } else {
+                alert('请先连接WebSocket');
+            }
+        }
+
+        // 自动连接
+        connect();
+    </script>
+</body>
+</html>
