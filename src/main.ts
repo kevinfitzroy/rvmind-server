@@ -6,14 +6,20 @@ import * as fs from 'fs';
 import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
+  console.log('🚀 Starting NestJS application...');
+  
   const httpsOptions = {
     key: fs.readFileSync('../192.168.8.145-key.pem'),
     cert: fs.readFileSync('../192.168.8.145.pem'),
   };
 
+  console.log('📄 SSL certificates loaded successfully');
+  
   const app = await NestFactory.create(AppModule, {
     httpsOptions,
   });
+
+  console.log('🏗️ NestJS application created');
 
   // 启用URI版本化
   app.enableVersioning({
@@ -26,11 +32,14 @@ async function bootstrap() {
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
-
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
-
-  console.log(`Application is running on: https://localhost:${port}`);
+  try{
+    await app.listen(port);
+  }catch (error) {
+    console.error('❌ Failed to start the application:', error.message);
+    return;
+  }
+  console.log(`🌐 Application is running on: https://localhost:${port}`);
 
   // 启动 ngrok 隧道
   // try {

@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { BatteryService } from './battery.service';
+import { BatteryBackupService } from './batteryBackup.service';
 
 @Controller({
   path: 'battery',
@@ -14,7 +14,7 @@ import { BatteryService } from './battery.service';
 export class BatteryBackupController {
   private readonly logger = new Logger(BatteryBackupController.name);
 
-  constructor(private readonly batteryService: BatteryService) {}
+  constructor(private readonly batteryService: BatteryBackupService) {}
 
   // @Get('realtime')
   // async getRealTimeData(): Promise<RealTimeData> {

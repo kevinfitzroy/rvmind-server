@@ -1,0 +1,457 @@
+FormatVersion=5.0 // Do not edit!
+Title="DCDC"
+
+{ENUMS}
+// VCU发给BMS的高压上下电指令
+enum VCU_HVPowerEnableBMS(0="无指令", 1="主动上高压指令", 2="主动下高压指令", 
+  3="BMS下电请求允许指令")
+// VCU发给BMS的电池加热使能指令
+enum VCU_HeatingEnableBMS(0="禁止加热", 1="允许加热")
+// BMS给VCU的高压上下电使能状态
+enum BMS_HVPowerAllow(0="禁止上高压", 1="允许上高压", 2="请求下高压", 3="保留")
+// BMS的高压回路状态
+enum BMS_HVPowerLoopStatus(0="高压回路未闭合", 1="高压回路闭合")
+// BMS加热请求状态
+enum BMS_HeatingRequest(0="禁止加热", 1="请求加热")
+// BMS加热回路状态
+enum BMS_HeatingLoopStatus(0="加热回路未闭合", 1="加热回路闭合")
+// BMS高压继电器状态
+enum BMS_HVRelayStatus(0="继电器断开", 1="继电器闭合")
+// BMS故障等级
+enum BMS_FaultLevel(0="无故障", 1="一级故障", 2="二级故障", 3="三级故障")
+// BMS故障状态
+enum BMS_FaultStatus(0="无故障", 1="有故障")
+// 车载充电机充电指令
+enum VCU_ChgCmdOBC(0="充电机开启充电", 1="充电机关闭输出", 2="加热模式开启", 
+  3="充电完成")
+// DCDC使能信号
+enum VCU_EnableDCDC(85="启动", 170="关闭")
+// DCDC反馈给VCU的DCDC运行状态
+enum DCDC_RunStatus(0="停机", 1="充电中", 2="充电完成", 3="保留")
+// DCDC发给VCU的故障等级
+enum DCDC_FaultStatus(0="一级故障", 1="二级故障", 2="三级故障", 3="最严重故障")
+enum DCDC_SystemStatus(0="就绪", 4="控制电源接通", 5="故障", 7="诊断和标定")
+enum DCDC_FaultCode(0="无故障", 1="过热", 2="短路", 3="过流", 4="输出过压", 
+  5="输入过压", 6="输入欠压", 7="通讯故障")
+enum VCU_EnableDCAC(0="关机", 1="开机")
+enum OBC_FaultStatus(0="正常", 1="故障")
+enum OBC_StartStatus(0="启动输出", 1="关闭输出")
+// 电池连接状态
+enum OBC_BatConStatus(0="连接", 1="未连接")
+enum OBC_SystemStatus(0="初始化", 1="待机", 2="恒流充电", 3="恒压充电", 
+  4="充电完成", 5="休眠", 6="可恢复故障", 7="不可恢复故障")
+enum OBC_FaultCode(1="充电口温度过温", 2="内部温度过温", 3="输出过流", 
+  4="通信超时", 5="输入欠压", 6="输入过压", 8="PFC过压", 9="PFC欠压", 
+  10="输出欠压", 11="输出过压", 12="电磁锁故障")
+// 电磁锁状态
+enum OBC_LockStatus(0="解锁状态", 1="锁止状态")
+// S2状态
+enum OBC_S2Status(0="断开状态", 1="闭合状态")
+// BMS唤醒状态
+enum OBC_BMSWakeupStatus(0="禁止状态", 1="使能状态")
+// 低压12V状态
+enum OBC_LowVolStatus(0="禁止状态", 1="使能状态")
+// CC电阻值状态
+enum OBC_CCResStatus(1="无连接", 2="半连接", 3="1500Ω", 4="680Ω", 5="220Ω", 
+  6="100Ω", 7="CC接地")
+enum VCU_RunCmdBMS(0="放电模式", 1="充电模式")
+enum DCAC_FBLCmd(0="无指令", 1="禁止FBL功能", 2="使能FBL功能")
+enum VCU_FBLCmd(0="无指令", 1="禁止FBL功能", 2="使能FBL功能")
+enum DCAC_TaskState(1="SENSORCHECK", 2="RUN", 3="ERROR")
+enum VCU_TaksState(1="SENSORCHECK", 2="RUN", 3="FAILSAFE")
+enum VCU_EnablePWM(0="使能出PWM波", 1="禁止出PWM波")
+enum VCU_ChgStatusBMS(0="电池高压回路未闭合", 1="电池高压回路已闭合", 
+  3="电池已满充暂禁充状态", 2="未定义")
+enum DCAC_RELAY1(0="继电器1关闭", 1="继电器1打开")
+enum DCAC_RELAY2(0="继电器2关闭", 1="继电器2打开")
+enum DCAC_OPT1(0="光耦1打开",1="光耦1关闭")
+enum DCAC_OPT2(0="光耦2打开",1="光耦2关闭")
+{SENDRECEIVE}
+
+[BMS_COMMAND]
+ID=0CFF8A31h	// VCU发给BMS的控制指令
+Type=Extended
+DLC=8
+CycleTime=10
+Var=HVPowerEnable unsigned 0,2 /e:VCU_HVPowerEnableBMS	// 高压上下电指令
+Var=LifeTime unsigned 56,8	// VCU发给BMS命令生命信号
+Var=HeatingEnable unsigned 2,1 /e:VCU_HeatingEnableBMS	// 电池加热指令
+Var=RunCmd unsigned 3,1 /e:VCU_RunCmdBMS	// VCU发送BMS的电池工作模式指令
+
+[VCU_COMMAND01]
+ID=04040000h
+Type=Extended
+DLC=8
+Var=RunCmdBMSDebug unsigned 43,1 /e:VCU_RunCmdBMS
+Var=VolRefBoost unsigned 16,16 /f:0.01 /p:2 /d:0
+Var=VolRefRamp unsigned 8,8 /f:0.01 /p:2
+Var=FBLFlagVCU unsigned 32,8 /e:VCU_FBLCmd
+Var=HVPowerEnableDebug unsigned 40,2 /e:VCU_HVPowerEnableBMS
+Var=ChgCmdOBCDebug unsigned 48,4 /e:VCU_ChgCmdOBC
+Var=SnapCmd unsigned 56,8
+Var=HeatingEnableDebug unsigned 42,1 /e:VCU_HeatingEnableBMS
+Var=EnableDCDCDebug unsigned 44,4 /e:VCU_EnableDCDC /d:4
+Var=EnableVCU unsigned 0,8
+Var=PWMDebug unsigned 52,1
+Var=PWMEnable unsigned 53,1 /e:VCU_EnablePWM
+
+[VCU_COMMAND02]
+ID=04440000h
+Type=Extended
+DLC=8
+Var=KP_Vol unsigned 0,16 /f:0.001 /p:3 /d:0.1
+Var=KI_Vol unsigned 16,16 /f:1E-005 /p:5 /d:0.01
+Var=KP_Cur unsigned 32,16 /f:0.001 /p:3 /d:0.1
+Var=KI_Cur unsigned 48,16 /f:1E-005 /p:5 /d:0.01
+
+[DCDC_Status]
+ID=1828272Bh	// DCDC发给VCU的状态参数
+Type=Extended
+DLC=8
+CycleTime=100
+Var=RunStatus unsigned 1,2 /e:DCDC_RunStatus
+Var=SystemStatus unsigned 5,3 /e:DCDC_SystemStatus
+Var=FaultStatus unsigned 3,2 /e:DCDC_FaultStatus
+Var=TempModule unsigned 8,8 /u:℃ /o:-40
+Var=VolOutput unsigned 16,16 /u:V /f:0.05 /p:2
+Var=CurOutput unsigned 32,16 /u:A /f:0.05 /o:-1600 /max:1676.75
+Var=FaultCode unsigned 48,8 /e:DCDC_FaultCode
+Var=CANVersion unsigned 56,8
+
+[DCDC_COMMAND]
+ID=10FF7AD0h	// VCU发给DCDC的控制指令
+Type=Extended
+DLC=8
+CycleTime=100
+Var=LifeTime unsigned 0,8
+Var=EnableDCDC unsigned 56,8 /e:VCU_EnableDCDC	// VCU发给DCDC的使能信号
+
+[VCU_Status01]
+ID=04840000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=PumpEnable unsigned 0,8	// 0开启水泵，1关闭水泵
+Var=FanEnable unsigned 8,8	// 0开启风扇，1停止风扇
+Var=VCU_EmptyFlagBMS_class01 unsigned 16,8	// 保护1级
+Var=VCU_EmptyFlagBMS_class02 unsigned 24,8 /p:1	// 保护2级
+Var="Variable--03" signed 32,16	// 最低单体
+Var="Variable--04" signed 48,16	// 最高单体
+
+[VCU_Status02]
+ID=04C40000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=KEY_ON_EN unsigned 48,8	// ON档信号,0断开，1接通
+Var=FaultCode unsigned 56,8
+Var=NodeLostBMS unsigned 16,1
+Var=NodeLostOBC unsigned 17,1
+Var=ChgCmdVCU unsigned 22,2
+Var=NodeLostDCAC unsigned 19,1
+Var=NodeLostDCDC unsigned 18,1
+Var=ChgCmdOBG unsigned 20,1
+Var=ChgCmdOBS unsigned 21,1
+Var=ChgStatusBMS unsigned 24,2 /e:VCU_ChgStatusBMS
+Var=EmptyFlagBMS unsigned 26,1
+Var=VersionSW unsigned 40,8
+
+[VCU_Status03]
+ID=05040000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=ki_vol_boost float 32,32 /p:5
+Var=kp_vol_boost float 0,32 /p:5
+
+[VCU_Status04]
+ID=05440000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=OBS_VolInput unsigned 0,16 /f:0.001 /p:3
+Var=OBG_VolInput unsigned 16,16 /f:0.001 /p:3
+Var=VCU_VolOutput unsigned 32,16 /f:0.01 /p:3
+Var=NTC_TempMax signed 48,8
+Var=VCU_TempMax signed 56,8
+
+[VCU_Status06]
+ID=05C40000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=kp_cur_boost float 0,32 /p:5
+Var=ki_cur_boost float 32,32 /p:5
+
+[VCU_Status05]
+ID=05840000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=OBS_CurOutput signed 0,16 /u:A /f:0.001 /o:30 /p:3
+Var=OBG_CurOutput signed 16,16 /u:A /f:0.001 /o:30 /p:3
+Var=OBS_PwmRef unsigned 32,16
+Var=OBG_PwmRef unsigned 48,16
+
+[BMS_Status01]
+ID=1801EFF4h	// BMS发给VCU的电池状态信息01
+Type=Extended
+DLC=8
+CycleTime=20
+Var=HVPowerAllow unsigned 0,2 /e:BMS_HVPowerAllow	// BMS所允许高压上下电状态
+Var=HVPowerLoopStatus unsigned 2,1 /e:BMS_HVPowerLoopStatus	// BMS反馈的高压回路状态
+Var=HeatingRequest unsigned 3,1 /e:BMS_HeatingRequest	// BMS的加热请求
+Var=CoolingRequest unsigned 4,1	// BMS反馈的加热回路状态
+Var=VolOutputBMS unsigned 8,16 /u:V /f:0.1	// 电池组输出电压
+Var=CurOutputBMS signed 24,16 /u:A /f:0.1 /o:-600	// 电池组输出电流
+Var=CapChg2Full unsigned 40,16 /u:Ah /f:0.1	// 电池组充满电所需要的电量
+Var=SOC unsigned 56,8 /u:%	// 电池组SOC值
+Var=DCChgStatus unsigned 5,1
+
+[BMS_FaultInfo]
+ID=1808EFF4h	// BMS故障信息
+Type=Extended
+DLC=8
+CycleTime=200
+Var=FaultLevel unsigned 0,4 /e:BMS_FaultLevel
+Var=SOCLessThan20 unsigned 8,1 /e:BMS_FaultStatus
+Var=DischgCurGreaterL2 unsigned 9,1 /e:BMS_FaultStatus
+Var=CellVolDiffGreaterL1 unsigned 10,1 /e:BMS_FaultStatus	// 单体压差大一级故障
+Var=TempDiffGreaterL1 unsigned 11,1 /e:BMS_FaultStatus
+Var=InsResLessThan800 unsigned 12,1 /e:BMS_FaultStatus
+Var=TempGreaterL2 unsigned 13,1 /e:BMS_FaultStatus
+Var=TempLessL3 unsigned 14,1 /e:BMS_FaultStatus
+Var=CellVolGreaterL1 unsigned 15,1 /e:BMS_FaultStatus	// 单体电压大一级故障
+Var=CellVolLessL1 unsigned 16,1 /e:BMS_FaultStatus
+Var=DischgCurGreaterL3 unsigned 17,1 /e:BMS_FaultStatus
+Var=SOCLessThan10 unsigned 18,1 /e:BMS_FaultStatus
+Var=CellVolDiffGreaterL2 unsigned 19,1 /e:BMS_FaultStatus	// 单体压差大二级故障
+Var=TempDiffGreaterL2 unsigned 20,1 /e:BMS_FaultStatus
+Var=InsResLessThan500 unsigned 21,1 /e:BMS_FaultStatus
+Var=TempGreaterL3 unsigned 22,1 /e:BMS_FaultStatus
+Var=VolGreaterL3 unsigned 23,1 /e:BMS_FaultStatus
+Var=VolLessL3 unsigned 24,1 /e:BMS_FaultStatus
+Var=DischgCurGreaterL1 unsigned 25,1 /e:BMS_FaultStatus
+Var=CellVolGreaterL2 unsigned 26,1 /e:BMS_FaultStatus	// 单体电压大二级故障
+Var=CellVolLessL2 unsigned 27,1 /e:BMS_FaultStatus
+Var=InsResLessThan100 unsigned 28,1 /e:BMS_FaultStatus
+Var=CellVolDiffGreaterL3 unsigned 29,1 /e:BMS_FaultStatus	// 单体压差大三级故障
+Var=TempSensorFault unsigned 30,1 /e:BMS_FaultStatus
+Var=VolSensorFault unsigned 31,1 /e:BMS_FaultStatus
+Var=InnerCANFault unsigned 32,1 /e:BMS_FaultStatus
+Var=CellVolGreaterL3 unsigned 33,1 /e:BMS_FaultStatus	// 单体电压大三级故障
+Var=CellVolLessL3 unsigned 34,1 /e:BMS_FaultStatus
+Var=SOCStepChange unsigned 35,1 /e:BMS_FaultStatus
+Var=SOCGreaterL3 unsigned 36,1 /e:BMS_FaultStatus
+Var=ChgCurGreaterL2 unsigned 37,1 /e:BMS_FaultStatus
+Var=ChgCurGreaterL3 unsigned 38,1 /e:BMS_FaultStatus
+Var=CANComFault unsigned 39,1 /e:BMS_FaultStatus	// CAN通信故障
+Var=MainRelayCutoffFault unsigned 40,1 /e:BMS_FaultStatus	// 主继电器粘连三级故障
+Var=MainLoopBreakFault unsigned 41,1 /e:BMS_FaultStatus	// 主回路断路
+Var=PrechgFailFault unsigned 43,1 /e:BMS_FaultStatus	// 预充失败
+Var=MainNegRelayCutoffFault unsigned 46,1 /e:BMS_FaultStatus	// 主负继电器粘连
+Var=HeatingRelayCutoffFault unsigned 44,1 /e:BMS_FaultStatus	// HeatingRelayCutoffFault
+Var=FstchgRelayCutoffFault unsigned 47,1 /e:BMS_FaultStatus	// 快充继电器粘连
+Var=FstchgPortTempGreaterL3 unsigned 42,1 /e:BMS_FaultStatus	// 直流充电座高温三级故障
+Var=DCChargerFault unsigned 48,1
+Var=DCANComFault unsigned 49,1
+Var=DCReceptacleHighTemp unsigned 50,1
+Var=DCReceptacleOverTemp unsigned 51,1
+Var=PrechgRelayFault unsigned 45,1 /e:BMS_FaultStatus
+
+[BMS_NorminalInfo]
+ID=1807EFF4h	// 电池标称值
+Type=Extended
+DLC=8
+CycleTime=5000
+Var=CellVolMaxAllowed unsigned 0,12 /u:mV	// 单体最高保护电压
+Var=CellVolMinAllowed unsigned 12,12 /u:mV	// 单体最低保护电压
+Var=CapacityNorminal unsigned 24,12 /u:Ah /f:0.1	// 电池组标称容量
+Var=VolNorminal unsigned 36,12 /u:V /f:0.1	// 电池组标称电压
+Var=SW_Ver1 unsigned 48,4
+Var=SW_Ver2 unsigned 52,6
+Var=SW_Ver3 unsigned 58,6
+
+[BMS_TempInfo]
+ID=1805EFF4h	// BMS温度信息
+Type=Extended
+DLC=8
+CycleTime=1000
+Var=TempAvg unsigned 0,8 /u:℃ /o:-40	// 电池组平均温度
+Var=TempMin unsigned 8,8 /u:℃ /o:-40	// 电池最低温度
+Var=TempMinID unsigned 16,8	// 电池最低温度探针号
+Var=TempMax unsigned 24,8 /u:℃ /o:-40	// 电池最高温度
+Var=TempMaxID unsigned 32,8	// 电池最高温度探针号
+Var=DCChgPosTemp unsigned 40,8 /u:℃ /o:-40
+Var=DCChgNegTemp unsigned 48,8 /u:℃ /o:-40
+
+[BMS_Status02]
+ID=1804EFF4h	// BMS发给VCU的电池状态信息02
+Type=Extended
+DLC=8
+CycleTime=100
+Var=InsResNeg unsigned 16,16 /u:kΩ /f:10	// 负极绝缘电阻值
+Var=InsResPos unsigned 0,16 /u:kΩ /f:10	// 正极绝缘电阻值
+Var=PosRelayStatus unsigned 32,1 /e:BMS_HVRelayStatus
+Var=NegRelayStatus unsigned 33,1 /e:BMS_HVRelayStatus
+Var=PrechgRelayStaus unsigned 34,1 /e:BMS_HVRelayStatus
+Var=BatteryChargingStatus unsigned 40,8
+Var=SOCMinCanUse unsigned 48,8 /u:%
+Var=SOH unsigned 56,8 /u:%
+Var=DCChgRelayStatus unsigned 35,1
+Var=HeatingRelayStatus unsigned 36,1
+
+[BMS_CellInfo]
+ID=1802EFF4h	// 电池最高和最低单体电压信息
+Type=Extended
+DLC=8
+CycleTime=100
+Var=CellVolMinID unsigned 24,8	// 最低单体电压编号
+Var=CellVolAvg unsigned 0,12 /u:mV	// 最低单体电压
+Var=CellVolMaxID unsigned 44,8	// 最高单体电压编号
+Var=CellVolMax unsigned 32,12 /u:mV	// 最高单体电压
+Var=CellVolMin unsigned 12,12 /u:mV
+
+[BMS_Version]
+ID=1806EFF4h	// 快充充电信息
+Type=Extended
+DLC=8
+CycleTime=5000
+Var=DcchgreqVolt unsigned 0,12 /u:V	// 快充充电请求电压
+Var=DcchgReqCurr unsigned 12,12 /u:A /f:0.1	// 快充充电请求电流
+
+[BMS_CurInfo]
+ID=1803EFF4h	// 电池允许的充放电电流
+Type=Extended
+DLC=8
+CycleTime=100
+Var=PusleDischgCurAllowed unsigned 0,16 /u:A /f:0.1	// 电池组允许的脉冲放电电流
+Var=PulseChgCurAllowed unsigned 16,16 /u:A /f:0.1	// 电池组允许的脉冲充电电流
+Var=ContChgCurAllowed unsigned 48,16 /u:A /f:0.1	// 电池组允许的持续充电电流
+Var=ContDischgCurAllowed unsigned 32,16 /u:A /f:0.1	// 电池组允许的持续放电电流
+
+[DCAC_COMMAND]
+ID=04080000h
+Type=Extended
+DLC=8
+CycleTime=100
+Var=EnableDCAC unsigned 0,8 /e:VCU_EnableDCAC	// VCU使能或禁能DCAC工作输出交流电
+Var=EnablePWM unsigned 8,8 /e:VCU_EnablePWM
+
+[DCAC_Status]
+ID=04C80000h
+Type=Extended
+DLC=8
+CycleTime=10
+//Var=DC_VolMea unsigned 32,16 /u:V /f:0.01 /p:2
+//Var=AC_VolMea signed 48,16 /u:V /f:0.01 /p:2
+var=DCAC_RELAY1 unsigned 32,8 /e:DCAC_RELAY1
+var=DCAC_RELAY2 unsigned 40,8 /e:DCAC_RELAY2
+var=DCAC_OPT1 unsigned 48,8 /e:DCAC_OPT1
+var=DCAC_OPT2 unsigned 56,8 /e:DCAC_OPT2
+Var=TempCapOBS unsigned 24,8 /u:℃ /o:-50
+Var=TempCapOBG unsigned 16,8 /u:℃ /o:-50
+Var=SysStatus unsigned 0,4 /e:DCAC_TaskState
+Var=TempModule unsigned 8,8 /u:℃ /o:-50
+Var=HandSwitch unsigned 4,1	// KEY_BACK，0接通，1断开
+
+[OBC_COMMAND]
+ID=1806E5F4h
+Type=Extended
+DLC=8
+CycleTime=500
+Var=VolRefAllowedOBC unsigned 0,16 /u:V /f:0.1 /p:1
+Var=CurRefAllowedOBC unsigned 16,16 /u:A /f:0.1 /p:1
+Var=ChgCmdOBC unsigned 32,8 /e:VCU_ChgCmdOBC /d:1
+Var=LifeTimeOBC unsigned 40,8
+
+[OBC_Status01]
+ID=18FF50E5h
+Type=Extended
+DLC=8
+CycleTime=500
+Var=BatConStatus unsigned 37,1 /e:OBC_BatConStatus
+Var=CCStatus unsigned 38,1 /e:OBC_FaultStatus
+Var=CPStatus unsigned 39,1 /e:OBC_FaultStatus
+Var=TempModule unsigned 40,8 /o:-40
+Var=SoftwareVer unsigned 48,8
+Var=HardwareVer unsigned 56,8
+Var=TempStatus unsigned 33,1 /e:OBC_FaultStatus
+Var=ACVolStatus unsigned 34,1 /e:OBC_FaultStatus
+Var=StartStatus unsigned 35,1 /e:OBC_StartStatus
+Var=CommStatus unsigned 36,1 /e:OBC_FaultStatus
+Var=HardwareStatus unsigned 32,1 /e:OBC_FaultStatus
+Var=VolOutputOBC unsigned 0,16 /u:V /f:0.1 /p:1	// OBC实际输出的电压值
+Var=CurOutputOBC unsigned 16,16 /u:A /f:0.1 /p:1	// OBC实际输出的电流值
+
+[OBC_Status02]
+ID=18FF50E6h
+Type=Extended
+DLC=8
+CycleTime=500
+Var=VolACInput unsigned 0,16 /u:V /f:0.1	// 充电机交流输入电压
+Var=VolPFC unsigned 16,16 /u:V /f:0.1
+Var=CurLimit unsigned 32,8 /u:A /f:0.1
+Var=VolBat unsigned 40,16 /u:V /f:0.1	// 充电机检测到电池电压或输出电压
+Var=SystemStatus unsigned 56,4 /e:OBC_SystemStatus	// 充电机状态
+Var=FaultCode unsigned 60,4 /e:OBC_FaultCode	// 充电机故障码
+
+[OBC_Status03]
+ID=18FF50E7h
+Type=Extended
+DLC=8
+CycleTime=500
+Var=CurACInput unsigned 0,12 /f:0.1 /p:1
+Var=CurOutputPileAllowed unsigned 12,12 /f:0.1 /p:1
+Var=TempCB unsigned 24,8 /u:℃ /o:-40
+Var=TempChgPort1 unsigned 32,8 /o:-40
+Var=TempChgPort2 unsigned 40,8 /o:-40
+Var=CPDuty unsigned 48,8
+Var=S2Status unsigned 57,1 /e:OBC_S2Status
+Var=BMSWakeupStatus unsigned 58,1 /e:OBC_BMSWakeupStatus
+Var=LowVolStatus unsigned 59,1 /e:OBC_LowVolStatus
+Var=Reserved unsigned 60,1
+Var=CCResStatus unsigned 61,3 /e:OBC_CCResStatus
+Var=LockStatus unsigned 56,1 /e:OBC_LockStatus
+
+[DCAC_FBLDebug]
+ID=04480000h
+Type=Extended
+DLC=8
+Var=FBLFlagDCAC unsigned 0,8 /e:DCAC_FBLCmd
+
+[DCAC_VAR]
+ID=04880000h
+Type=Extended
+DLC=8
+CycleTime=10
+Var=VAR1 float 0,32 /p:3
+Var=VAR2 float 32,32 /p:3
+
+[DCAC_Ver]
+ID=05080000h	// DCAC版本信息
+Type=Extended
+DLC=8
+CycleTime=10
+Var=VersionSW unsigned 0,8
+
+[ISG_COMMAND]
+ID=0CFF8B32h
+Type=Extended
+DLC=8
+Var=ISG_ChargeEnable unsigned 0,1
+Var=ChgPos_ConState unsigned 8,1
+Var=LiftTime unsigned 56,8
+
+[RCU_Status01]
+ID=1601EFF4h
+Type=Extended
+DLC=8
+Var=ISG_TOR unsigned 0,16 ; ISG发电机实际转矩 (单位: N.m, 精度: 0.1, 范围: -3200~3200)
+Var=ISG_SPEED unsigned 16,16 ; ISG发电机实时转速 (单位: Rpm, 范围: -32000~32000)
+Var=ISG_CurOutput unsigned 32,16 ; 直流母线输出电流 (单位: A, 精度: 0.1, 范围: -1000~1000)
+Var=FaultInfo unsigned 48,8 ; 故障码 (范围: 0~255)
+Var=System_Status unsigned 56,2 ; 发电状态 (0x00:关闭发电, 0x01:待机状态, 0x02:发电运行中)
+Var=LiftTime unsigned 60,4 ; 控制报文生命信号 (范围: 0~15)
+
+

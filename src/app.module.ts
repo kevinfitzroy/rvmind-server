@@ -10,7 +10,7 @@ import { BatteryModule } from './battery/battery.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '../../../', 'public'), // 指向 Vite 构建输出的目录
+      rootPath: '/home/yrv/rvmind/public', // 指向 Vite 构建输出的目录
     }),
     ModbusModule,
     RelayModule,
@@ -31,9 +31,5 @@ import { BatteryModule } from './battery/battery.module';
 })
 export class AppModule implements OnModuleInit {
   onModuleInit(): void {
-    console.log(
-      'Static files served from:',
-      join(__dirname, '../../', 'public'),
-    );
   }
 }
