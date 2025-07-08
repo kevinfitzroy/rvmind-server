@@ -349,16 +349,16 @@ export class ModbusService implements OnModuleInit, OnModuleDestroy {
     if (!queue) {
       throw new Error(`No request queue found for port: ${port}`);
     }
-    console.log(`ENQUEREQUEST ${deviceAddress}`);
+    // console.log(`ENQUEREQUEST ${deviceAddress}`);
     return new Promise<T>((resolve, reject) => {
       const queuedRequest: QueuedRequest = {
         deviceAddress,
         task: async (client: ModbusRTU) => {
           // 在执行请求前设置正确的设备地址
           client.setID(deviceAddress);
-          console.log(
-            `Processing request for port ${port} with device address ${deviceAddress}`,
-          );
+          // console.log(
+          //   `Processing request for port ${port} with device address ${deviceAddress}`,
+          // );
           try {
             const result = await request(client);
             // 操作成功，标记设备为在线

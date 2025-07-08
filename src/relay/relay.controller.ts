@@ -58,7 +58,7 @@ export class RelayController {
     try {
       const controller =
         this.relayService.getRelayControllerFromConfig(deviceId);
-      console.log(`Getting relay state for device: ${deviceId}`);
+      // console.log(`Getting relay state for device: ${deviceId}`);
       return await controller.readRelayState();
     } catch (error) {
       // console.error(`Error getting relay state for device ${deviceId}:`, error);

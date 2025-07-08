@@ -70,9 +70,9 @@ export class RelayService {
       relayAddr: config.address,
       relayType: RELAY_TYPE_MAP[config.type],
     };
-    console.log(
-      `Creating relay controller for device ${deviceId} at address ${relayOptions.relayAddr} on port ${config.port}`,
-    );
+    // console.log(
+    //   `Creating relay controller for device ${deviceId} at address ${relayOptions.relayAddr} on port ${config.port}`,
+    // );
     return this.getRelayController(config.port, relayOptions);
   }
 
