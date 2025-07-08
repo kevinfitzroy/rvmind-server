@@ -30,3 +30,9 @@ export function canFrameToString(frame: CanFrame): string {
 import * as net from 'net';
 
 export type SocketOptions = net.TcpSocketConnectOpts;
+
+export type FrameMatcher = (frame: CanFrame) => boolean;
+export type MatcherHandler = {
+  matcher: FrameMatcher;
+  callback: (frame: CanFrame) => void;
+};

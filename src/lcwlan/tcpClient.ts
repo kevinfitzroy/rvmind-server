@@ -1,16 +1,16 @@
-import net from 'net';
+import { Socket } from 'net';
 import { SocketOptions } from './types';
 import { CanFrame } from './types';
 import { parseCanFrame, createCanFrame } from './canProtocol';
 
 export class TcpCanClient {
-  private socket: net.Socket;
+  private socket: Socket;
   private buffer: Buffer = Buffer.alloc(0);
   private frameQueue: CanFrame[] = [];
   private resolveQueue: ((frame: CanFrame) => void)[] = [];
 
   constructor(private options: SocketOptions) {
-    this.socket = new net.Socket();
+    this.socket = new Socket();
     this.setupDataHandler();
   }
 
