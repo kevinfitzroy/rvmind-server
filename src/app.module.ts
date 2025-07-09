@@ -4,8 +4,8 @@ import { RelayModule } from './relay/relay.module';
 import { ModbusModule } from './modbus/modbus.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { BatteryModule } from './battery/battery.module';
+import { SensorModule } from './sensor/sensor.module';
 
 @Module({
   imports: [
@@ -15,6 +15,7 @@ import { BatteryModule } from './battery/battery.module';
     ModbusModule,
     RelayModule,
     BatteryModule,
+    SensorModule,
     EventEmitterModule.forRoot({
       // 可选配置
       wildcard: false,
