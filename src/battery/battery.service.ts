@@ -4,6 +4,64 @@ import { CanFrame } from 'src/lcwlan/types';
 import * as winston from 'winston';
 import * as path from 'path';
 
+// 定时器配置接口
+interface TimerConfig {
+    interval: number; // 间隔时间（毫秒）
+    enabled: boolean; // 是否启用
+}
+
+// 定时器管理器
+class TimerManager {
+    private timers: Map<string, { lastTime: number; config: TimerConfig }> = new Map();
+
+    constructor(private defaultConfigs: Record<string, TimerConfig>) {
+        // 初始化所有定时器
+        Object.entries(defaultConfigs).forEach(([key, config]) => {
+            this.timers.set(key, {
+                lastTime: 0,
+                config: { ...config }
+            });
+        });
+    }
+
+    // 检查是否应该触发采样
+    shouldSample(timerKey: string): boolean {
+        const timer = this.timers.get(timerKey);
+        if (!timer || !timer.config.enabled) {
+            return false;
+        }
+
+        const now = Date.now();
+        if (now - timer.lastTime >= timer.config.interval) {
+            timer.lastTime = now;
+            return true;
+        }
+        return false;
+    }
+
+    // 更新定时器配置
+    updateConfig(timerKey: string, config: Partial<TimerConfig>) {
+        const timer = this.timers.get(timerKey);
+        if (timer) {
+            timer.config = { ...timer.config, ...config };
+        }
+    }
+
+    // 获取定时器配置
+    getConfig(timerKey: string): TimerConfig | undefined {
+        return this.timers.get(timerKey)?.config;
+    }
+
+    // 获取所有定时器配置
+    getAllConfigs(): Record<string, TimerConfig> {
+        const configs: Record<string, TimerConfig> = {};
+        this.timers.forEach((timer, key) => {
+            configs[key] = { ...timer.config };
+        });
+        return configs;
+    }
+}
+
 // 根据 RVPMS.sym 中的定义，只有这些字段有枚举
 export enum BMS_HVPowerAllow {
     FORBID_HIGH_VOLTAGE = 0,     // "禁止上高压"
@@ -467,6 +525,9 @@ export class BatteryService {
     // Dedicated logger for BMS fault information
     private bmsFaultLogger: winston.Logger;
 
+    // 定时器管理器
+    private timerManager: TimerManager;
+
     // 原始CAN报文最新实例
     private readonly rawCanFrames: PMS_RawCanFrames = {};
 
@@ -486,6 +547,9 @@ export class BatteryService {
     ) {
         // 初始化Winston logger
         this.initializeLoggers();
+        
+        // 初始化定时器管理器
+        this.initializeTimerManager();
         
         this.registerPmsMatcher(0x1801EFF4, this.parseBMS_Status01.bind(this));
         this.registerPmsMatcher(0x1804EFF4, this.parseBMS_Status02.bind(this));
@@ -573,6 +637,33 @@ export class BatteryService {
         this.bmsFaultLogger.info('BMS Fault logger initialized');
     }
 
+    private initializeTimerManager() {
+        // 定义默认的定时器配置
+        const defaultTimerConfigs: Record<string, TimerConfig> = {
+            'BMS_Status01': { interval: 60000, enabled: true },     // 每分钟采样一次
+            'BMS_Status02': { interval: 60000, enabled: true },     // 每分钟采样一次
+            'BMS_FaultInfo_Normal': { interval: 600000, enabled: true }, // 正常状态每10分钟采样一次
+            'DCAC_Command': { interval: 30000, enabled: true },     // 每30秒采样一次
+            'DCAC_Status': { interval: 30000, enabled: true },      // 每30秒采样一次
+            'ISG_Command': { interval: 30000, enabled: true },      // 每30秒采样一次
+            'RCU_Status01': { interval: 30000, enabled: true },     // 每30秒采样一次
+        };
+
+        this.timerManager = new TimerManager(defaultTimerConfigs);
+        this.logger.info('定时器管理器初始化完成', this.timerManager.getAllConfigs());
+    }
+
+    // 获取定时器配置（供外部调用）
+    getTimerConfigs(): Record<string, TimerConfig> {
+        return this.timerManager.getAllConfigs();
+    }
+
+    // 更新定时器配置（供外部调用）
+    updateTimerConfig(timerKey: string, config: Partial<TimerConfig>) {
+        this.timerManager.updateConfig(timerKey, config);
+        this.logger.info(`定时器配置已更新: ${timerKey}`, this.timerManager.getConfig(timerKey));
+    }
+
     // 获取原始CAN报文数据
     getRawCanFrames(): PMS_RawCanFrames {
         return { ...this.rawCanFrames };
@@ -636,8 +727,8 @@ export class BatteryService {
         this.pmsStatus.bms.current = curOutputBMS;
         this.pmsStatus.timestamp = Date.now();
 
-        // 采样记录重要状态变化 - 大约每分钟记录一次（假设200ms周期，300次采样1次）
-        if (Math.random() < 0.0033) {
+        // 定时器控制的采样记录
+        if (this.timerManager.shouldSample('BMS_Status01')) {
             this.logger.debug(`BMS状态采样: SOC=${soc}%, 电压=${volOutputBMS.toFixed(1)}V, 电流=${curOutputBMS.toFixed(1)}A`);
         }
 
@@ -694,8 +785,8 @@ export class BatteryService {
         // 更新汇总状态
         this.pmsStatus.timestamp = Date.now();
 
-        // 采样记录重要状态变化
-        if (Math.random() < 0.0033) {
+        // 定时器控制的采样记录
+        if (this.timerManager.shouldSample('BMS_Status02')) {
             this.logger.debug(`BMS状态02采样: 正极绝缘=${insResPos}kΩ, 负极绝缘=${insResNeg}kΩ, SOH=${soh}%`);
         }
 
@@ -843,7 +934,7 @@ export class BatteryService {
         this.pmsStatus.bms.faultLevel = faultLevel;
         this.pmsStatus.timestamp = Date.now();
 
-        // 只在故障状态变化时记录，或者采样记录
+        // 只在故障状态变化时记录，或者定时器控制的采样记录
         if (faultLevel > BMS_FaultLevel.NO_FAULT) {
             this.logger.debug(`BMS故障信息: 故障等级=${faultLevel}, CAN通信故障=${canComFault}`);
             this.batteryLogger.info('BMS故障信息更新', {
@@ -982,9 +1073,8 @@ export class BatteryService {
                     break;
             }
         } else {
-            // 无故障时记录正常状态（大约每10分钟记录一次）
-            // BMS故障报文周期200ms，每秒5次，10分钟内3000次，概率1/3000
-            if (Math.random() < 0.00033) {
+            // 无故障时使用定时器控制的采样记录
+            if (this.timerManager.shouldSample('BMS_FaultInfo_Normal')) {
                 this.bmsFaultLogger.debug('BMS状态正常', {
                     timestamp: faultDetails.timestamp,
                     faultLevel: faultInfo.faultLevel,
@@ -1018,8 +1108,8 @@ export class BatteryService {
         this.pmsStatus.dcac.enableDCAC = enableDCAC;
         this.pmsStatus.timestamp = Date.now();
 
-        // 采样记录命令变化
-        if (Math.random() < 0.01) {
+        // 定时器控制的采样记录
+        if (this.timerManager.shouldSample('DCAC_Command')) {
             this.logger.debug(`DCAC命令采样: 使能=${enableDCAC}, PWM=${enablePWM}`);
         }
 
@@ -1082,8 +1172,8 @@ export class BatteryService {
         this.pmsStatus.vcu.keyOn = handSwitch === 0;
         this.pmsStatus.timestamp = Date.now();
 
-        // 采样记录状态变化
-        if (Math.random() < 0.01) {
+        // 定时器控制的采样记录
+        if (this.timerManager.shouldSample('DCAC_Status')) {
             this.logger.debug(`DCAC状态采样: 系统状态=${sysStatus}, 模块温度=${tempModule}℃`);
         }
 
@@ -1118,8 +1208,8 @@ export class BatteryService {
         this.pmsStatus.isg.chargeEnable = isgChargeEnable;
         this.pmsStatus.timestamp = Date.now();
 
-        // 采样记录命令变化
-        if (Math.random() < 0.01) {
+        // 定时器控制的采样记录
+        if (this.timerManager.shouldSample('ISG_Command')) {
             this.logger.debug(`ISG命令采样: 充电使能=${isgChargeEnable}, 连接状态=${chgPosConState}`);
         }
 
@@ -1175,9 +1265,11 @@ export class BatteryService {
         this.pmsStatus.isg.faultInfo = faultInfo;
         this.pmsStatus.timestamp = Date.now();
 
-        // 采样记录状态变化，或者在故障时记录
-        if (faultInfo > 0 || Math.random() < 0.01) {
-            this.logger.debug(`RCU状态01: 转矩=${isgTor.toFixed(1)}N.m, 转速=${isgSpeed}Rpm, 电流=${isgCurOutput.toFixed(1)}A${faultInfo > 0 ? `, 故障码=${faultInfo}` : ''}`);
+        // 定时器控制的采样记录，或者在故障时记录
+        if (faultInfo > 0) {
+            this.logger.debug(`RCU状态01故障: 转矩=${isgTor.toFixed(1)}N.m, 转速=${isgSpeed}Rpm, 电流=${isgCurOutput.toFixed(1)}A, 故障码=${faultInfo}`);
+        } else if (this.timerManager.shouldSample('RCU_Status01')) {
+            this.logger.debug(`RCU状态01采样: 转矩=${isgTor.toFixed(1)}N.m, 转速=${isgSpeed}Rpm, 电流=${isgCurOutput.toFixed(1)}A`);
         }
 
         return rcuStatus01;
