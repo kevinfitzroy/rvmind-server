@@ -1,31 +1,52 @@
 import { Socket } from 'net';
+import { EventEmitter } from 'events';
 import { SocketOptions } from './types';
 import { CanFrame } from './types';
 import { parseCanFrame, createCanFrame } from './canProtocol';
 
-export class TcpCanClient {
+export class TcpCanClient extends EventEmitter {
   private socket: Socket;
   private buffer: Buffer = Buffer.alloc(0);
   private frameQueue: CanFrame[] = [];
   private resolveQueue: ((frame: CanFrame) => void)[] = [];
+  private isConnected = false;
 
   constructor(private options: SocketOptions) {
+    super();
     this.socket = new Socket();
-    this.setupDataHandler();
+    this.setupEventHandlers();
   }
 
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.socket.connect(this.options, () => resolve());
+      this.socket.connect(this.options, () => {
+        this.isConnected = true;
+        resolve();
+      });
       this.socket.once('error', reject);
     });
   }
 
-  // 持续监听数据流
-  private setupDataHandler() {
+  // 设置事件处理器
+  private setupEventHandlers() {
     this.socket.on('data', (data: Buffer) => {
       this.buffer = Buffer.concat([this.buffer, data]);
       this.processBuffer();
+    });
+
+    this.socket.on('close', () => {
+      this.isConnected = false;
+      this.emit('disconnect');
+      // 清理待处理的Promise
+      this.resolveQueue.forEach(resolve => {
+        // 可以传递一个特殊的错误帧或null来指示连接断开
+      });
+      this.resolveQueue = [];
+    });
+
+    this.socket.on('error', (error) => {
+      this.isConnected = false;
+      this.emit('error', error);
     });
   }
 
@@ -49,15 +70,25 @@ export class TcpCanClient {
     }
   }
 
-  // 修改后的 receiveFrames
+  // 修改后的 receiveFrames，添加连接状态检查
   async *receiveFrames(): AsyncGenerator<CanFrame> {
-    while (true) {
+    while (this.isConnected) {
       if (this.frameQueue.length > 0) {
         yield this.frameQueue.shift()!;
       } else {
-        yield await new Promise((resolve) => {
-          this.resolveQueue.push(resolve);
-        });
+        try {
+          const frame = await new Promise<CanFrame>((resolve, reject) => {
+            if (!this.isConnected) {
+              reject(new Error('连接已断开'));
+              return;
+            }
+            this.resolveQueue.push(resolve);
+          });
+          yield frame;
+        } catch (error) {
+          // 连接断开时退出生成器
+          break;
+        }
       }
     }
   }
@@ -73,8 +104,13 @@ export class TcpCanClient {
   }
 
   async disconnect(): Promise<void> {
+    this.isConnected = false;
     return new Promise((resolve) => {
       this.socket.end(() => resolve());
     });
+  }
+
+  getConnectionStatus(): boolean {
+    return this.isConnected;
   }
 }
