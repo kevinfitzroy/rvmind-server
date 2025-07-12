@@ -37,7 +37,7 @@ export class SensorService implements OnModuleInit {
   private readonly logger = new Logger(SensorService.name);
   private sensorData: Map<string, BaseSensorData> = new Map();
   private lastUpdateTimes: Map<string, Date> = new Map();
-  
+
   // 传感器配置
   private sensorConfigs: Map<string, SensorConfig<any>> = new Map();
 
@@ -63,11 +63,11 @@ export class SensorService implements OnModuleInit {
     // });
 
     this.sensorConfigs.set('level', {
-        name: '清水液位传感器',
-        command: '0c03000000018517',
-        expectedDataLength: 2,
-        parseFunction: this.parseLevelData.bind(this),
-      });
+      name: '清水液位传感器',
+      command: '0c03000000018517',
+      expectedDataLength: 2,
+      parseFunction: this.parseLevelData.bind(this),
+    });
 
     // 可以继续添加其他传感器配置...
   }
@@ -92,7 +92,7 @@ export class SensorService implements OnModuleInit {
     }
 
     try {
-      this.logger.debug(`开始更新${config.name}数据`);
+      // this.logger.debug(`开始更新${config.name}数据`);
 
       // 发送请求
       const responseData = await this.modbusService.sendRequest(config.command);
@@ -115,7 +115,7 @@ export class SensorService implements OnModuleInit {
       this.sensorData.set(sensorType, sensorData);
       this.lastUpdateTimes.set(sensorType, new Date());
 
-      this.logger.debug(`${config.name}数据更新成功`);
+      // this.logger.debug(`${config.name}数据更新成功`);
       this.logger.debug(`${config.name}数据:`, parsedData);
 
       return {
@@ -132,7 +132,7 @@ export class SensorService implements OnModuleInit {
   private parseTemperatureData(data: Buffer): Omit<TemperatureSensorData, 'timestamp'> {
     const temperature = data.readInt16BE(0) / 100; // 假设前2字节是温度*100
     const humidity = data.readInt16BE(2) / 100;    // 假设接下来2字节是湿度*100
-    
+
     return {
       temperature,
       humidity,
@@ -142,7 +142,7 @@ export class SensorService implements OnModuleInit {
   // 液位传感器数据解析
   private parseLevelData(data: Buffer): Omit<LevelSensorData, 'timestamp'> {
     const level = data.readUint16BE(0) / 10; // 假设前2字节是液位*10 (单位: cm)
-    const levelPercentage = 66;// data.readInt16BE(2) / 100; // 假设接下来2字节是液位百分比*100
+    const levelPercentage = parseInt(Math.min(100, (level / 190) * 100).toString());// data.readInt16BE(2) / 100; // 假设接下来2字节是液位百分比*100
     this.logger.debug(`液位传感器数据解析: level=${level}, levelPercentage=${levelPercentage}`);
     return {
       level,
@@ -156,7 +156,7 @@ export class SensorService implements OnModuleInit {
   ): { data: SensorDataMap[K] | null; updateTime: Date | null } {
     const data = this.sensorData.get(sensorType) as SensorDataMap[K] | undefined;
     const updateTime = this.lastUpdateTimes.get(sensorType) || null;
-    
+
     return {
       data: data || null,
       updateTime,
@@ -166,14 +166,14 @@ export class SensorService implements OnModuleInit {
   // 获取所有传感器数据
   getAllLatestData(): Map<string, { data: BaseSensorData; updateTime: Date }> {
     const result = new Map();
-    
+
     this.sensorData.forEach((data, sensorType) => {
       const updateTime = this.lastUpdateTimes.get(sensorType);
       if (updateTime) {
         result.set(sensorType, { data, updateTime });
       }
     });
-    
+
     return result;
   }
 
@@ -197,7 +197,7 @@ export class SensorService implements OnModuleInit {
     config: SensorConfig<T>
   ): void {
     this.sensorConfigs.set(sensorType, config);
-    
+
     // 立即注册定时任务
     this.modbusService.registerScheduledTask(`${config.name}数据更新`, async () => {
       return await this.updateSensorData(sensorType);

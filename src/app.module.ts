@@ -6,12 +6,14 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { BatteryModule } from './battery/battery.module';
 import { SensorModule } from './sensor/sensor.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ServeStaticModule.forRoot({
       rootPath: '/home/yrv/rvmind/public', // 指向 Vite 构建输出的目录
     }),
+    ScheduleModule.forRoot(),
     ModbusModule,
     RelayModule,
     BatteryModule,

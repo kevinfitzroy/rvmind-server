@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ModbusSlowService } from '../modbus/modbus-slow.service';
 import { RealTimeData, parseRealTimeData } from './type';
+import { ModbusPort, ModbusService } from '../modbus/modbus.service';
+import { Interval } from '@nestjs/schedule';
 
 
 @Injectable()
@@ -15,10 +17,17 @@ export class BatteryBackupService implements OnModuleInit {
   onModuleInit() {
     // 注册定时任务到ModbusSlowService
     this.modbusService.registerScheduledTask('电池实时数据更新', async () => {
-      return await this.updateRealTimeData();
+      // return await this.updateRealTimeData();
     });
   }
+  // @Interval(5000)
+  // private async updateSoc() {
+  //   const soc = this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x43, async (client) => {
+  //     return await client.readHoldingRegisters(0x00,1)
+  //   }, false);
 
+  //   console.log(soc)
+  // }
   private async updateRealTimeData(): Promise<{
     success: boolean;
     soc?: number;
@@ -28,8 +37,7 @@ export class BatteryBackupService implements OnModuleInit {
       this.logger.debug('开始更新电池实时数据');
 
       // 发送读取实时数据的请求
-      const responseData =
-        await this.modbusService.sendRequest('81030000007f1bea');
+      const responseData = await this.modbusService.sendRequest('81030000007f1bea');
 
       // 检查数据长度
       if (responseData.length !== 254) {

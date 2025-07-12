@@ -111,7 +111,7 @@ export class ModbusService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     for (const client of this.clients.values()) {
-      client.close(() => {});
+      client.close(() => { });
     }
     this.clients.clear();
     if (this.periodicTaskInterval) {

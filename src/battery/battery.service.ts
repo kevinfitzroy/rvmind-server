@@ -694,12 +694,12 @@ export class BatteryService {
 
         const rawVoltage = (frame.data[1] & 0xFF) | ((frame.data[2] & 0xFF) << 8);
         // const volOutputBMS = rawVoltage * 0.1;
-        const volOutputBMS = parseFloat((rawVoltage * 0.1).toFixed(2));
+        const volOutputBMS = parseFloat((rawVoltage * 0.1).toFixed(4));
 
         const rawCurrent = (frame.data[3] & 0xFF) | ((frame.data[4] & 0xFF) << 8);
         const signedCurrent = rawCurrent > 32767 ? rawCurrent - 65536 : rawCurrent;
         // const curOutputBMS = signedCurrent * 0.1 - 600;
-        const curOutputBMS = parseFloat((signedCurrent * 0.1 - 600).toFixed(2));
+        const curOutputBMS = parseFloat((signedCurrent * 0.1 - 600).toFixed(4));
         
         const rawCapacity = (frame.data[5] & 0xFF) | ((frame.data[6] & 0xFF) << 8);
         const capChg2Full = rawCapacity * 0.1;
@@ -1108,6 +1108,16 @@ export class BatteryService {
         this.pmsStatus.dcac.enableDCAC = enableDCAC;
         this.pmsStatus.timestamp = Date.now();
 
+        if(this.pmsStatus.bms.soc >=11 && enableDCAC === VCU_EnableDCAC.DISABLE) {
+            this.bmsFaultLogger.error('异常 DCAC 禁能', {
+                timestamp: new Date(dcacCommand.timestamp).toISOString(),
+                soc: this.pmsStatus.bms.soc,
+                enableDCAC: enableDCAC,
+                enablePWM: enablePWM,
+                frameId: frame.id.toString(16).toUpperCase(),
+                rawData: Buffer.from(frame.data).toString('hex')
+            });
+        }
         // 定时器控制的采样记录
         if (this.timerManager.shouldSample('DCAC_Command')) {
             this.logger.debug(`DCAC命令采样: 使能=${enableDCAC}, PWM=${enablePWM}`);
@@ -1172,6 +1182,17 @@ export class BatteryService {
         this.pmsStatus.vcu.keyOn = handSwitch === 0;
         this.pmsStatus.timestamp = Date.now();
 
+        if(sysStatus !== DCAC_TaskState.RUN) {
+            this.bmsFaultLogger.error('异常 DCAC 状态', {
+                timestamp: new Date(dcacStatus.timestamp).toISOString(),
+                sysStatus: sysStatus,
+                tempModule: tempModule,
+                relay1: relay1,
+                relay2: relay2,
+                frameId: frame.id.toString(16).toUpperCase(),
+                rawData: Buffer.from(frame.data).toString('hex')
+            });
+        }
         // 定时器控制的采样记录
         if (this.timerManager.shouldSample('DCAC_Status')) {
             this.logger.debug(`DCAC状态采样: 系统状态=${sysStatus}, 模块温度=${tempModule}℃`);
