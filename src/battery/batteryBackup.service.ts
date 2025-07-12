@@ -1,48 +1,56 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ModbusSlowService } from '../modbus/modbus-slow.service';
+import { Injectable, Logger } from '@nestjs/common';
 import { RealTimeData, parseRealTimeData } from './type';
 import { ModbusPort, ModbusService } from '../modbus/modbus.service';
 import { Interval } from '@nestjs/schedule';
 
 
 @Injectable()
-export class BatteryBackupService implements OnModuleInit {
+export class BatteryBackupService {
   private readonly logger = new Logger(BatteryBackupService.name);
   private latestData: RealTimeData | null = null;
   private lastUpdateTime: Date | null = null;
 
-  constructor(private readonly modbusService: ModbusSlowService) { }
+  constructor(private readonly modbusService: ModbusService) { }
 
+  @Interval(3000)
+  private async updateSummary() {
+    if (this.latestData === null) {
+      return;
+    }
+    const { data } = await this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x81, async (client) => {
+      return await client.readHoldingRegisters(0x38, 3)
+    }, false);
 
-  onModuleInit() {
-    // 注册定时任务到ModbusSlowService
-    this.modbusService.registerScheduledTask('电池实时数据更新', async () => {
-      // return await this.updateRealTimeData();
-    });
+    this.latestData.totalVoltage = data[0] * 0.1;
+    this.latestData.current = (30000 - data[1]) * 0.1;
+    this.latestData.soc = parseFloat((data[2] * 0.001).toFixed(3));
   }
-  // @Interval(5000)
-  // private async updateSoc() {
-  //   const soc = this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x43, async (client) => {
-  //     return await client.readHoldingRegisters(0x00,1)
-  //   }, false);
 
-  //   console.log(soc)
-  // }
+  @Interval(15000)
   private async updateRealTimeData(): Promise<{
     success: boolean;
     soc?: number;
     voltage?: number;
   }> {
+
     try {
       this.logger.debug('开始更新电池实时数据');
 
-      // 发送读取实时数据的请求
-      const responseData = await this.modbusService.sendRequest('81030000007f1bea');
+      const batch1 = await this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x81, async (client) => {
+        return await client.readHoldingRegisters(0x00, 0x20)
+      }, false);
 
-      // 检查数据长度
-      if (responseData.length !== 254) {
-        throw new Error(`数据长度不正确: ${responseData.length}, 期望254字节`);
-      }
+      const batch2 = await this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x81, async (client) => {
+        return await client.readHoldingRegisters(0x20, 0x20)
+      }, false);
+      const batch3 = await this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x81, async (client) => {
+        return await client.readHoldingRegisters(0x40, 0x20)
+      }, false);
+      const batch4 = await this.modbusService.enqueueRequest(ModbusPort.MAIN_PORT, 0x81, async (client) => {
+        return await client.readHoldingRegisters(0x60, 0x1f)
+      }, false);
+
+      const responseData = Buffer.concat([batch1.buffer, batch2.buffer, batch3.buffer, batch4.buffer]);
 
       // 解析数据
       const realTimeData = parseRealTimeData(responseData);
@@ -74,30 +82,6 @@ export class BatteryBackupService implements OnModuleInit {
     };
   }
 
-  // async getRealTimeData(): Promise<RealTimeData> {
-  //     try {
-  //         this.logger.debug('手动获取电池实时数据');
-
-  //         const responseData = await this.modbusService.sendRequest('81030000007f1bea');
-
-  //         if (responseData.length !== 254) {
-  //             throw new Error(`数据长度不正确: ${responseData.length}, 期望254字节`);
-  //         }
-
-  //         const realTimeData = parseRealTimeData(responseData);
-
-  //         // 更新缓存的数据
-  //         this.latestData = realTimeData;
-  //         this.lastUpdateTime = new Date();
-
-  //         this.logger.debug('手动获取电池实时数据成功');
-  //         return realTimeData;
-
-  //     } catch (error) {
-  //         this.logger.error(`手动获取电池实时数据失败: ${error.message}`);
-  //         throw error;
-  //     }
-  // }
 
   isDataFresh(maxAgeMs: number = 30000): boolean {
     if (!this.lastUpdateTime) {

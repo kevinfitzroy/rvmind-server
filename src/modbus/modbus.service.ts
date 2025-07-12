@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import ModbusRTU from 'modbus-serial';
 import { SerialPortOptions } from 'modbus-serial/ModbusRTU';
 import { ModbusQueueStatus, ModbusSystemStatus } from './modbus.controller';
+import RTUBufferedPort from './RTUBufferedPort';
 
 export enum ModbusPort {
   MAIN_PORT = '/dev/ttyS9', // RS485 1
@@ -83,9 +84,28 @@ export class ModbusService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     for (const port of Object.values(ModbusPort)) {
       const config = this.modbusConfigs[port];
-      const client = new ModbusRTU();
+      const client = new ModbusRTU(new RTUBufferedPort({
+        path: config.address,
+        ...config.options,
+        autoOpen: false, // 禁用自动打开，手动控制连接
+      }));
       client.setTimeout(1000);
-      await client.connectRTUBuffered(config.address, config.options);
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          client.open((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+        console.log(`Port ${port} opened successfully`);
+      } catch (err) {
+        console.error(`Error opening port ${port}:`, err);
+      }
+
       this.clients.set(port, client);
       this.requestQueues.set(port, []);
       this.isProcessingQueue.set(port, false);

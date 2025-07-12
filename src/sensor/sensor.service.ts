@@ -41,7 +41,7 @@ export class SensorService implements OnModuleInit {
   // 传感器配置
   private sensorConfigs: Map<string, SensorConfig<any>> = new Map();
 
-  constructor(private readonly modbusService: ModbusSlowService) {
+  constructor(private readonly modbusSlowService: ModbusSlowService) {
     this.initializeSensorConfigs();
   }
 
@@ -75,7 +75,7 @@ export class SensorService implements OnModuleInit {
   onModuleInit() {
     // 为每个传感器注册定时任务
     this.sensorConfigs.forEach((config, sensorType) => {
-      this.modbusService.registerScheduledTask(`${config.name}数据更新`, async () => {
+      this.modbusSlowService.registerScheduledTask(`${config.name}数据更新`, async () => {
         return await this.updateSensorData(sensorType);
       });
     });
@@ -95,7 +95,7 @@ export class SensorService implements OnModuleInit {
       // this.logger.debug(`开始更新${config.name}数据`);
 
       // 发送请求
-      const responseData = await this.modbusService.sendRequest(config.command);
+      const responseData = await this.modbusSlowService.sendRequest(config.command);
 
       // 检查数据长度
       if (responseData.length < config.expectedDataLength) {
@@ -199,7 +199,7 @@ export class SensorService implements OnModuleInit {
     this.sensorConfigs.set(sensorType, config);
 
     // 立即注册定时任务
-    this.modbusService.registerScheduledTask(`${config.name}数据更新`, async () => {
+    this.modbusSlowService.registerScheduledTask(`${config.name}数据更新`, async () => {
       return await this.updateSensorData(sensorType);
     });
   }
