@@ -1,18 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { RealTimeData, parseRealTimeData } from './type';
 import { ModbusPort, ModbusService } from '../modbus/modbus.service';
 import { Interval } from '@nestjs/schedule';
 
 
 @Injectable()
-export class BatteryBackupService {
+export class BatteryBackupService implements OnModuleInit {
   private readonly logger = new Logger(BatteryBackupService.name);
   private latestData: RealTimeData | null = null;
   private lastUpdateTime: Date | null = null;
 
   constructor(private readonly modbusService: ModbusService) { }
+  onModuleInit() {
+    this.updateRealTimeData();
+  }
 
-  @Interval(3000)
+  @Interval(5000)
   private async updateSummary() {
     if (this.latestData === null) {
       return;
@@ -23,7 +26,7 @@ export class BatteryBackupService {
 
     this.latestData.totalVoltage = data[0] * 0.1;
     this.latestData.current = (30000 - data[1]) * 0.1;
-    this.latestData.soc = parseFloat((data[2] * 0.001).toFixed(3));
+    this.latestData.soc =  Math.round(data[2] * 0.001 * 1000) / 1000;
   }
 
   @Interval(15000)
