@@ -3,6 +3,7 @@ import { CanReceiverService } from '../lcwlan/canReceiver.service';
 import { CanFrame } from 'src/lcwlan/types';
 import * as winston from 'winston';
 import * as path from 'path';
+import { Interval } from '@nestjs/schedule';
 
 // 定时器配置接口
 interface TimerConfig {
@@ -541,6 +542,23 @@ export class BatteryService {
         isg: { chargeEnable: ISG_ChargeEnable.DISABLE, systemStatus: ISG_System_Status.POWER_OFF, torque: 0, speed: 0, current: 0, faultInfo: 0 },
         timestamp: Date.now()
     };
+
+     @Interval(5000)
+     private async checkRCUStatus() {
+        if(this.rawCanFrames.RCU_Status01){
+            if(this.rawCanFrames.RCU_Status01.timestamp + 5000 < Date.now()) {
+                this.rawCanFrames.RCU_Status01 = {
+                    isgTor: 0,
+                    isgSpeed: 0,
+                    isgCurOutput: 0,
+                    faultInfo: 0,
+                    systemStatus: ISG_System_Status.POWER_OFF,
+                    liftTime: 0,
+                    timestamp: Date.now()
+                }
+            }
+        }
+     }
 
     constructor(
         private readonly canReceiverService: CanReceiverService,
@@ -1246,16 +1264,17 @@ export class BatteryService {
         // Var=ISG_TOR unsigned 0,16 - ISG发电机实际转矩 (字节0-1, 小端序, 精度0.1, 范围-3200~3200)
         const rawTorque = (frame.data[0] & 0xFF) | ((frame.data[1] & 0xFF) << 8);
         const signedTorque = rawTorque > 32767 ? rawTorque - 65536 : rawTorque;
-        const isgTor = signedTorque * 0.1;
+        const isgTor = signedTorque * 0.1 - 3200;
 
         // Var=ISG_SPEED unsigned 16,16 - ISG发电机实时转速 (字节2-3, 小端序, 范围-32000~32000)
         const rawSpeed = (frame.data[2] & 0xFF) | ((frame.data[3] & 0xFF) << 8);
-        const isgSpeed = rawSpeed > 32767 ? rawSpeed - 65536 : rawSpeed;
+        const isgSpeedOffset = rawSpeed > 32767 ? 65536 - rawSpeed : rawSpeed;
+        const isgSpeed = isgSpeedOffset - 32000;
 
         // Var=ISG_CurOutput unsigned 32,16 - 直流母线输出电流 (字节4-5, 小端序, 精度0.1, 范围-1000~1000)
         const rawCurrent = (frame.data[4] & 0xFF) | ((frame.data[5] & 0xFF) << 8);
         const signedCurrent = rawCurrent > 32767 ? rawCurrent - 65536 : rawCurrent;
-        const isgCurOutput = signedCurrent * 0.1;
+        const isgCurOutput = signedCurrent * 0.1 - 1000;
 
         // Var=FaultInfo unsigned 48,8 - 故障码 (字节6, 范围0~255)
         const faultInfo = frame.data[6] & 0xFF;
