@@ -11,7 +11,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: '/home/yrv/rvmind/public', // 指向 Vite 构建输出的目录
+      rootPath: '/home/yrv/public', // 指向 Vite 构建输出的目录
     }),
     ScheduleModule.forRoot(),
     ModbusModule,
