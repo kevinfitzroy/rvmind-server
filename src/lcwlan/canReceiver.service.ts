@@ -7,13 +7,16 @@ export class CanReceiverService implements OnModuleInit {
     private readonly logger = new Logger(CanReceiverService.name);
     private matchers: MatcherHandler[] = [];
     private socket: TcpCanClient;
+    private socket2: TcpCanClient; // 新增第二个连接
     private isConnected = false;
+    private isConnected2 = false; // 第二个连接状态
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 10;
     private baseReconnectDelay = 1000; // 1秒基础延迟
     private maxReconnectDelay = 60000; // 最大60秒延迟
     private reconnectTimer: NodeJS.Timeout | null = null;
     private isReceiving = false;
+    private isReceiving2 = false; // 第二个连接接收状态
 
     async onModuleInit() {
         await this.connectWithRetry();
@@ -76,6 +79,16 @@ export class CanReceiverService implements OnModuleInit {
         });
     }
 
+    private startReceiving2() {
+        if (this.isReceiving2) return;
+        
+        this.isReceiving2 = true;
+        this.receiveFrames2().catch(error => {
+            this.logger.error('第二个连接接收帧时发生错误:', error);
+            this.isReceiving2 = false;
+        });
+    }
+
     private scheduleReconnect() {
         if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer);
@@ -118,6 +131,71 @@ export class CanReceiverService implements OnModuleInit {
         await this.connectWithRetry();
     }
 
+    // 手动连接第二个端口
+    async connectSecondPort(): Promise<boolean> {
+        if (this.isConnected2) {
+            this.logger.warn('第二个端口已经连接');
+            return true;
+        }
+
+        try {
+            if (this.socket2) {
+                try {
+                    await this.socket2.disconnect();
+                } catch (error) {
+                    // 忽略断开连接时的错误
+                }
+            }
+
+            this.socket2 = new TcpCanClient({
+                port: 8400,
+                host: "192.168.8.155",
+            });
+
+            // 监听第二个连接的断开事件
+            this.socket2.on('disconnect', () => {
+                this.logger.warn('第二个TCP连接已断开');
+                this.isConnected2 = false;
+                this.isReceiving2 = false;
+            });
+
+            this.socket2.on('error', (error) => {
+                this.logger.error('第二个TCP连接错误:', error);
+                this.isConnected2 = false;
+                this.isReceiving2 = false;
+            });
+
+            await this.socket2.connect();
+            this.isConnected2 = true;
+            this.logger.log("第二个CAN连接已建立 (端口: 8400)");
+
+            // 启动第二个连接的帧接收
+            this.startReceiving2();
+            return true;
+        } catch (error) {
+            this.logger.error('第二个端口连接失败:', error);
+            this.isConnected2 = false;
+            return false;
+        }
+    }
+
+    // 手动断开第二个端口
+    async disconnectSecondPort(): Promise<void> {
+        if (!this.isConnected2 || !this.socket2) {
+            this.logger.warn('第二个端口未连接');
+            return;
+        }
+
+        try {
+            this.isConnected2 = false;
+            this.isReceiving2 = false;
+            await this.socket2.disconnect();
+            this.logger.log("第二个CAN连接已断开");
+        } catch (error) {
+            this.logger.error('断开第二个端口时发生错误:', error);
+        }
+    }
+
     // 获取连接状态
     getConnectionStatus() {
         return {
@@ -125,12 +203,22 @@ export class CanReceiverService implements OnModuleInit {
             isReceiving: this.isReceiving,
             reconnectAttempts: this.reconnectAttempts,
             maxReconnectAttempts: this.maxReconnectAttempts,
-            socketConnected: this.socket?.getConnectionStatus() || false
+            socketConnected: this.socket?.getConnectionStatus() || false,
+            // 新增第二个连接状态
+            isConnected2: this.isConnected2,
+            isReceiving2: this.isReceiving2,
+            socket2Connected: this.socket2?.getConnectionStatus() || false
         };
     }
 
     private async receiveFrames() {
         for await (const frame of this.socket.receiveFrames()) {
+            this.handleFrame(frame);
+        }
+    }
+
+    private async receiveFrames2() {
+        for await (const frame of this.socket2.receiveFrames()) {
             this.handleFrame(frame);
         }
     }
@@ -153,5 +241,17 @@ export class CanReceiverService implements OnModuleInit {
                 }
             }
         }
+    }
+
+    // 发送帧到指定连接
+    async sendFrame(frame: CanFrame, useSecondPort: boolean = false): Promise<void> {
+        const targetSocket = useSecondPort ? this.socket2 : this.socket;
+        const isTargetConnected = useSecondPort ? this.isConnected2 : this.isConnected;
+
+        if (!isTargetConnected || !targetSocket) {
+            throw new Error(`目标连接${useSecondPort ? '(端口8400)' : '(端口8500)'}未建立`);
+        }
+
+        return targetSocket.sendFrame(frame);
     }
 }
