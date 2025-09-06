@@ -7,6 +7,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { BatteryModule } from './battery/battery.module';
 import { SensorModule } from './sensor/sensor.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { DieselHeaterModule } from './dieselHeater/dieselHeater.module';
+import { LcwlanModule } from './lcwlan/lcwlan.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     RelayModule,
     BatteryModule,
     SensorModule,
+    DieselHeaterModule,
+    LcwlanModule,
     EventEmitterModule.forRoot({
       // 可选配置
       wildcard: false,
