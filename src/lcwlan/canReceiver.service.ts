@@ -1,12 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { TcpCanClient } from "./tcpClient";
-import { CanFrame, FrameMatcher, MatcherHandler } from "./types";
+import { CanFrame, FrameFormat, FrameMatcher, FrameType, MatcherHandler } from "./types";
 
 @Injectable()
 export class CanReceiverService implements OnModuleInit {
     private readonly logger = new Logger(CanReceiverService.name);
     private matchers: MatcherHandler[] = [];
-    private socket: TcpCanClient;
+    private socket: TcpCanClient | undefined;
     private socket2: TcpCanClient; // 新增第二个连接
     private isConnected = false;
     private isConnected2 = false; // 第二个连接状态
@@ -17,9 +17,16 @@ export class CanReceiverService implements OnModuleInit {
     private reconnectTimer: NodeJS.Timeout | null = null;
     private isReceiving = false;
     private isReceiving2 = false; // 第二个连接接收状态
+    
+    // 看门狗相关属性
+    private watchdogTimer: NodeJS.Timeout | null = null;
+    private watchdogInterval = 30000; // 30秒检测一次
+    private lastFrameTime = 0; // 上次收到帧的时间
+    private frameTimeoutThreshold = 120000; // 120秒无帧则认为连接异常
 
     async onModuleInit() {
         await this.connectWithRetry();
+        this.startWatchdog(); // 启动看门狗
     }
 
     private async connectWithRetry() {
@@ -42,6 +49,7 @@ export class CanReceiverService implements OnModuleInit {
                 this.logger.warn('TCP连接已断开');
                 this.isConnected = false;
                 this.isReceiving = false;
+                this.lastFrameTime = 0; // 重置帧时间
                 this.scheduleReconnect();
             });
 
@@ -49,12 +57,14 @@ export class CanReceiverService implements OnModuleInit {
                 this.logger.error('TCP连接错误:', error);
                 this.isConnected = false;
                 this.isReceiving = false;
+                this.lastFrameTime = 0; // 重置帧时间
                 this.scheduleReconnect();
             });
 
             await this.socket.connect();
             this.isConnected = true;
             this.reconnectAttempts = 0;
+            this.lastFrameTime = Date.now(); // 记录连接时间
             this.logger.log("CAN Receiver Service initialized and connected to socket.");
             
             // 启动帧接收
@@ -110,6 +120,97 @@ export class CanReceiverService implements OnModuleInit {
         this.reconnectTimer = setTimeout(async () => {
             await this.connectWithRetry();
         }, delay);
+    }
+
+    // 启动看门狗
+    private startWatchdog() {
+        if (this.watchdogTimer) {
+            clearInterval(this.watchdogTimer);
+        }
+
+        this.watchdogTimer = setInterval(() => {
+            this.checkConnectionHealth();
+        }, this.watchdogInterval);
+
+        this.logger.log('看门狗已启动');
+    }
+
+    // 停止看门狗
+    private stopWatchdog() {
+        if (this.watchdogTimer) {
+            clearInterval(this.watchdogTimer);
+            this.watchdogTimer = null;
+        }
+    }
+
+    // 检查连接健康状态
+    private checkConnectionHealth() {
+        const now = Date.now();
+        
+        // 检查主连接
+        if (this.isConnected) {
+            // 检查socket状态
+            if (!this.socket || !this.socket.getConnectionStatus()) {
+                this.logger.warn('主连接socket状态异常');
+                this.forceReconnect();
+                return;
+            }
+
+            // 检查数据流（如果CAN总线上有持续数据流的话）
+            const timeSinceLastFrame = now - this.lastFrameTime;
+            if (timeSinceLastFrame > this.frameTimeoutThreshold) {
+                this.logger.warn(`主连接 ${timeSinceLastFrame}ms 无数据，可能连接异常或总线无数据`);
+                // 这里可以选择是否强制重连，取决于业务需求
+                // 如果CAN总线可能长时间无数据，可以注释掉下面这行
+                this.forceReconnect();
+                return;
+            }
+        }
+    }
+
+    // 强制重连主连接
+    private async forceReconnect() {
+        this.logger.warn('检测到连接异常，执行强制重连');
+        
+        // 清理连接状态
+        this.isConnected = false;
+        this.isReceiving = false;
+        this.lastFrameTime = 0;
+
+        // 强制断开并清理socket
+        if (this.socket) {
+            try {
+                await this.socket.disconnect();
+            } catch (error) {
+                this.logger.warn('强制断开连接时出错:', error);
+            }
+            this.socket = undefined;
+        }
+
+        // 重置重连计数器并立即重连
+        this.reconnectAttempts = 0;
+        await this.connectWithRetry();
+    }
+
+    // 重连第二个端口
+    private async reconnectSecondPort() {
+        this.logger.warn('第二连接异常，尝试重连');
+        
+        this.isConnected2 = false;
+        this.isReceiving2 = false;
+
+        if (this.socket2) {
+            try {
+                await this.socket2.disconnect();
+            } catch (error) {
+                // 忽略错误
+            }
+        }
+
+        // 延迟重连第二个端口
+        setTimeout(async () => {
+            await this.connectSecondPort();
+        }, 5000);
     }
 
     // 手动重连
@@ -207,12 +308,20 @@ export class CanReceiverService implements OnModuleInit {
             // 新增第二个连接状态
             isConnected2: this.isConnected2,
             isReceiving2: this.isReceiving2,
-            socket2Connected: this.socket2?.getConnectionStatus() || false
+            socket2Connected: this.socket2?.getConnectionStatus() || false,
+            // 看门狗状态
+            watchdogActive: this.watchdogTimer !== null,
+            lastFrameTime: this.lastFrameTime,
+            timeSinceLastFrame: this.lastFrameTime > 0 ? Date.now() - this.lastFrameTime : 0
         };
     }
 
     private async receiveFrames() {
+        if (!this.socket) {
+            throw new Error('Socket is not initialized');
+        }
         for await (const frame of this.socket.receiveFrames()) {
+            this.lastFrameTime = Date.now(); // 更新接收时间
             this.handleFrame(frame);
         }
     }
@@ -253,5 +362,30 @@ export class CanReceiverService implements OnModuleInit {
         }
 
         return targetSocket.sendFrame(frame);
+    }
+
+    // 清理资源
+    async onModuleDestroy() {
+        this.stopWatchdog();
+        
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+        }
+
+        if (this.socket) {
+            try {
+                await this.socket.disconnect();
+            } catch (error) {
+                // 忽略错误
+            }
+        }
+
+        if (this.socket2) {
+            try {
+                await this.socket2.disconnect();
+            } catch (error) {
+                // 忽略错误
+            }
+        }
     }
 }
